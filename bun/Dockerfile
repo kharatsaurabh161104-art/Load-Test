@@ -5,8 +5,7 @@ WORKDIR /app
 # Copy package definition and install dependencies
 
 COPY package.json ./
-RUN bun install --production
-
+RUN bun install
 # Copy application source code
 
 COPY index.ts tsconfig.json ./
