@@ -1,0 +1,1092 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Load Monitor Analytics Dashboard</title>
+    <!-- Modern Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      :root {
+        --bg-main: #0b0f19;
+        --bg-card: rgba(20, 26, 46, 0.6);
+        --bg-card-hover: rgba(28, 36, 62, 0.8);
+        --border-color: rgba(255, 255, 255, 0.08);
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
+        --color-accent: #3b82f6;
+        --color-accent-glow: rgba(59, 130, 246, 0.3);
+        --color-success: #10b981;
+        --color-success-glow: rgba(16, 185, 129, 0.2);
+        --color-warning: #f59e0b;
+        --color-warning-glow: rgba(245, 158, 11, 0.2);
+        --color-danger: #ef4444;
+        --color-danger-glow: rgba(239, 68, 68, 0.2);
+        --font-sans: 'Plus Jakarta Sans', sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background: var(--bg-main);
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        min-height: 100vh;
+        padding: 2rem;
+        background-image: radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 40%),
+                          radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.03) 0%, transparent 40%);
+      }
+
+      header {
+        max-width: 1400px;
+        margin: 0 auto 2.5rem auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .logo-section h1 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #60a5fa 0%, #34d399 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: -0.5px;
+      }
+
+      .logo-section p {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin-top: 0.2rem;
+      }
+
+      nav {
+        display: flex;
+        gap: 1rem;
+      }
+
+      nav a {
+        text-decoration: none;
+        color: var(--text-secondary);
+        padding: 0.6rem 1.2rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border: 1px solid transparent;
+      }
+
+      nav a:hover {
+        color: var(--text-primary);
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      nav a.active {
+        color: #60a5fa;
+        background: rgba(59, 130, 246, 0.1);
+        border-color: rgba(59, 130, 246, 0.2);
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 2.5rem;
+      }
+
+      /* Active Banner */
+      .active-tests-banner {
+        background: rgba(59, 130, 246, 0.1);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        border-radius: 12px;
+        padding: 0.85rem 1.25rem;
+        font-size: 0.9rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: -1rem;
+      }
+
+      .pulse-dot {
+        width: 8px;
+        height: 8px;
+        background-color: var(--color-accent);
+        border-radius: 50%;
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+        animation: pulse 1.5s infinite;
+      }
+
+      @keyframes pulse {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+      }
+
+      /* Metric KPI Grid */
+      .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+      }
+
+      .kpi-card {
+        background: var(--bg-card);
+        backdrop-filter: blur(16px);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+      }
+
+      .kpi-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(255, 255, 255, 0.15);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+      }
+
+      .kpi-title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+      }
+
+      .kpi-value {
+        font-size: 2.25rem;
+        font-weight: 700;
+        color: #3b82f6;
+        text-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+      }
+
+      .kpi-value.green {
+        color: #10b981;
+        text-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+      }
+
+      .kpi-value.purple {
+        color: #8b5cf6;
+        text-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
+      }
+
+      /* Detailed Insights Layout */
+      .insights-section {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 2rem;
+      }
+
+      @media (max-width: 1024px) {
+        .insights-section {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .panel {
+        background: var(--bg-card);
+        backdrop-filter: blur(16px);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 1.75rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      }
+
+      .panel h2 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1.25rem;
+        color: #93c5fd;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .search-box {
+        margin-bottom: 1.5rem;
+        position: relative;
+      }
+
+      .search-input {
+        width: 100%;
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+      }
+
+      .search-input:focus {
+        outline: none;
+        border-color: var(--color-accent);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+      }
+
+      /* Domain Quick List */
+      .domain-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        max-height: 250px;
+        overflow-y: auto;
+        padding-right: 0.25rem;
+      }
+
+      .domain-item {
+        background: rgba(15, 23, 42, 0.4);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 0.65rem 1rem;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.85rem;
+        transition: all 0.2s ease;
+      }
+
+      .domain-item:hover, .domain-item.active {
+        background: rgba(59, 130, 246, 0.1);
+        border-color: rgba(59, 130, 246, 0.3);
+        color: #60a5fa;
+      }
+
+      .domain-count {
+        font-size: 0.75rem;
+        background: rgba(255, 255, 255, 0.06);
+        padding: 0.15rem 0.4rem;
+        border-radius: 4px;
+        color: var(--text-secondary);
+      }
+
+      .domain-item:hover .domain-count, .domain-item.active .domain-count {
+        background: rgba(59, 130, 246, 0.2);
+        color: #60a5fa;
+      }
+
+      /* Merged Insights Panel */
+      .merged-info {
+        margin-top: 1.5rem;
+        border-top: 1px solid var(--border-color);
+        padding-top: 1.5rem;
+      }
+
+      .merged-domain-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #34d399;
+        margin-bottom: 1rem;
+      }
+
+      .merged-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+      }
+
+      .merged-stat-box {
+        background: rgba(15, 23, 42, 0.4);
+        border-radius: 8px;
+        padding: 0.75rem;
+        border: 1px solid var(--border-color);
+      }
+
+      .merged-label {
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        margin-bottom: 0.2rem;
+      }
+
+      .merged-value {
+        font-size: 1.1rem;
+        font-weight: 700;
+      }
+
+      /* Charts Panel styling */
+      .charts-panel {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+      }
+
+      @media (max-width: 768px) {
+        .charts-panel {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .chart-container {
+        background: rgba(15, 23, 42, 0.4);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.25rem;
+        height: 300px;
+        position: relative;
+      }
+
+      .chart-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 1rem;
+        text-align: center;
+      }
+
+      /* Tables styling */
+      .ledger-card {
+        background: var(--bg-card);
+        backdrop-filter: blur(16px);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      }
+
+      .ledger-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+
+      .ledger-header h2 {
+        font-size: 1.25rem;
+        color: #93c5fd;
+      }
+
+      .ledger-actions {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+      }
+
+      .table-wrapper {
+        width: 100%;
+        overflow-x: auto;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.88rem;
+        text-align: left;
+      }
+
+      th {
+        background: rgba(15, 23, 42, 0.8);
+        color: var(--text-secondary);
+        font-weight: 600;
+        padding: 1rem;
+        border-bottom: 2px solid var(--border-color);
+        cursor: pointer;
+        user-select: none;
+        transition: color 0.2s ease;
+        white-space: nowrap;
+      }
+
+      th:hover {
+        color: var(--text-primary);
+      }
+
+      th.active-sort {
+        color: #3b82f6;
+      }
+
+      td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        white-space: nowrap;
+      }
+
+      tr:hover td {
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .url-cell {
+        max-width: 250px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: #60a5fa;
+        cursor: pointer;
+      }
+
+      .url-cell:hover {
+        text-decoration: underline;
+      }
+
+      .pill {
+        display: inline-block;
+        padding: 0.25rem 0.6rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+
+      .pill.success {
+        background: rgba(16, 185, 129, 0.15);
+        color: #34d399;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+      }
+
+      .pill.warning {
+        background: rgba(245, 158, 11, 0.15);
+        color: #fbbf24;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: var(--text-secondary);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="logo-section">
+        <h1>Load Performance Suite</h1>
+        <p>Advanced Real-time HTTP Load Monitor & Testing Dashboard</p>
+      </div>
+      <nav>
+        <a href="/dashboard" class="active">Dashboard</a>
+        <a href="/test-runner">Test Runner</a>
+      </nav>
+    </header>
+
+    <div class="container">
+      <!-- Active test status banner -->
+      <div class="active-tests-banner" id="activeTestsBanner">
+        <span>Checking system status...</span>
+        <div id="statusPulse" style="display: none;" class="pulse-dot"></div>
+      </div>
+
+      <!-- KPI Summary Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-title">Total Route Logs</div>
+          <div class="kpi-value purple" id="kpiHits">{{TOTAL_HITS}}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Total Performance Runs</div>
+          <div class="kpi-value" id="kpiBenchmarks">{{TOTAL_BENCHMARKS}}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Unique Target Domains</div>
+          <div class="kpi-value green" id="kpiDomains">{{TOTAL_SITES}}</div>
+        </div>
+      </div>
+
+      <!-- Interactive Domain Analysis -->
+      <section class="insights-section">
+        <!-- Search & Domain selector -->
+        <div class="panel">
+          <h2>Merged Domain Analytics</h2>
+          <div class="search-box">
+            <input type="text" id="domainSearch" class="search-input" placeholder="Search by Domain (e.g. xyz.com)..." />
+          </div>
+
+          <div class="domain-list" id="domainList">
+            <!-- Populated via API -->
+            <div style="padding: 1rem; text-align: center; color: var(--text-secondary);">Loading domains...</div>
+          </div>
+
+          <!-- Dynamic Merged Stats -->
+          <div class="merged-info" id="mergedInfoBox" style="display: none;">
+            <div class="merged-domain-title" id="mergedDomainName">domain.com</div>
+            <div class="merged-stats-grid">
+              <div class="merged-stat-box">
+                <div class="merged-label">Total Attacks</div>
+                <div class="merged-value" id="mergedAttacks">0</div>
+              </div>
+              <div class="merged-stat-box">
+                <div class="merged-label">Total Req. Attempted</div>
+                <div class="merged-value" id="mergedRequests">0</div>
+              </div>
+              <div class="merged-stat-box">
+                <div class="merged-label">Avg Req/Sec</div>
+                <div class="merged-value" id="mergedReqSec">0</div>
+              </div>
+              <div class="merged-stat-box">
+                <div class="merged-label">Avg Latency</div>
+                <div class="merged-value" id="mergedLatency">0 ms</div>
+              </div>
+              <div class="merged-stat-box" style="grid-column: span 2;">
+                <div class="merged-label">Max Latency</div>
+                <div class="merged-value" id="mergedMaxLatency" style="color: var(--color-danger);">0 ms</div>
+              </div>
+            </div>
+
+            <!-- Merged Stats Table -->
+            <table style="width: 100%; border-collapse: collapse; margin-top: 1.5rem; font-size: 0.85rem;">
+              <thead>
+                <tr>
+                  <th style="background: rgba(15, 23, 42, 0.6); padding: 8px; border-bottom: 2px solid var(--border-color);">Metric</th>
+                  <th style="background: rgba(15, 23, 42, 0.6); padding: 8px; border-bottom: 2px solid var(--border-color); text-align: right;">Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid var(--border-color);">Total Attacks</td>
+                  <td id="tableMergedAttacks" style="padding: 8px; border-bottom: 1px solid var(--border-color); text-align: right; font-weight: bold;">0</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid var(--border-color);">Total Requests</td>
+                  <td id="tableMergedRequests" style="padding: 8px; border-bottom: 1px solid var(--border-color); text-align: right; font-weight: bold;">0</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid var(--border-color);">Successful Requests (2xx)</td>
+                  <td id="tableMergedSuccess" style="padding: 8px; border-bottom: 1px solid var(--border-color); text-align: right; font-weight: bold; color: var(--color-success);">0</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid var(--border-color);">Blocked (403/429)</td>
+                  <td id="tableMergedBlocked" style="padding: 8px; border-bottom: 1px solid var(--border-color); text-align: right; font-weight: bold; color: var(--color-warning);">0</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid var(--border-color);">Failed Requests</td>
+                  <td id="tableMergedFailed" style="padding: 8px; border-bottom: 1px solid var(--border-color); text-align: right; font-weight: bold; color: var(--color-danger);">0</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid var(--border-color);">Avg Requests/Sec</td>
+                  <td id="tableMergedReqSec" style="padding: 8px; border-bottom: 1px solid var(--border-color); text-align: right; font-weight: bold;">0</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid var(--border-color);">Avg Latency</td>
+                  <td id="tableMergedLatency" style="padding: 8px; border-bottom: 1px solid var(--border-color); text-align: right; font-weight: bold;">0 ms</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid var(--border-color);">Max Latency</td>
+                  <td id="tableMergedMaxLatency" style="padding: 8px; border-bottom: 1px solid var(--border-color); text-align: right; font-weight: bold; color: var(--color-danger);">0 ms</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Domain merged charts -->
+        <div class="panel">
+          <h2>Merged Data Performance Metrics</h2>
+          <div class="charts-panel">
+            <div class="chart-container">
+              <div class="chart-title">Merged HTTP Requests Breakdown</div>
+              <canvas id="reqVolumeChart"></canvas>
+            </div>
+            <div class="chart-container">
+              <div class="chart-title">Merged Latency Trend (ms)</div>
+              <canvas id="latencyTrendChart"></canvas>
+            </div>
+            <div class="chart-container" style="grid-column: span 2; margin-top: 1.5rem;">
+              <div class="chart-title">Top Target Domains Performance Comparison</div>
+              <canvas id="domainsComparisonChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Ledger of Benchmarks -->
+      <section class="ledger-card">
+        <div class="ledger-header">
+          <h2>Historical Performance Ledger</h2>
+          <div class="ledger-actions">
+            <input type="text" id="historySearch" class="search-input" placeholder="Search URL..." style="max-width: 250px; margin-bottom: 0;" />
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table id="historyTable">
+            <thead>
+              <tr>
+                <th data-sort="id" class="active-sort">ID <span>▼</span></th>
+                <th data-sort="tested_url">Target URL <span></span></th>
+                <th data-sort="connections">Connections <span></span></th>
+                <th data-sort="duration">Duration <span></span></th>
+                <th data-sort="avg_req_per_sec">Avg Req/sec <span></span></th>
+                <th data-sort="avg_latency">Avg Latency <span></span></th>
+                <th data-sort="success_requests">Successes <span></span></th>
+                <th data-sort="blocked_requests">Blocked <span></span></th>
+                <th data-sort="status">Status <span></span></th>
+                <th data-sort="created_at">Timestamp <span></span></th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody">
+              <!-- Rendered Server-side initially by Express and updated dynamically -->
+              {{HISTORY_ROWS}}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      let reqVolumeChart = null;
+      let latencyTrendChart = null;
+      let domainsComparisonChart = null;
+      let selectedDomain = "";
+      
+      // Sorting state
+      let currentSortBy = "id";
+      let currentSortOrder = "DESC";
+
+      document.addEventListener('DOMContentLoaded', () => {
+        initCharts();
+        
+        // Active tests polling
+        checkActiveTests();
+        setInterval(checkActiveTests, 4000);
+
+        // Global stats polling
+        updateGlobalStats();
+        setInterval(updateGlobalStats, 5000);
+
+        // Fetch domain list and load first domain insights
+        loadDomainList();
+
+        // History Table Sorting setup
+        const tableHeaders = document.querySelectorAll('#historyTable th');
+        tableHeaders.forEach(th => {
+          th.addEventListener('click', () => {
+            const sortBy = th.getAttribute('data-sort');
+            if (currentSortBy === sortBy) {
+              currentSortOrder = currentSortOrder === 'DESC' ? 'ASC' : 'DESC';
+            } else {
+              currentSortBy = sortBy;
+              currentSortOrder = 'DESC';
+            }
+
+            // Update header UI arrows
+            tableHeaders.forEach(header => {
+              header.classList.remove('active-sort');
+              header.querySelector('span').innerText = '';
+            });
+            th.classList.add('active-sort');
+            th.querySelector('span').innerText = currentSortOrder === 'DESC' ? '▼' : '▲';
+
+            fetchHistory();
+          });
+        });
+
+        // Search inputs
+        let historySearchTimeout = null;
+        document.getElementById('historySearch').addEventListener('input', (e) => {
+          clearTimeout(historySearchTimeout);
+          historySearchTimeout = setTimeout(() => {
+            fetchHistory();
+          }, 300);
+        });
+
+        let domainSearchTimeout = null;
+        document.getElementById('domainSearch').addEventListener('input', (e) => {
+          clearTimeout(domainSearchTimeout);
+          domainSearchTimeout = setTimeout(() => {
+            loadDomainList(e.target.value);
+          }, 300);
+        });
+      });
+
+      function updateGlobalStats() {
+        fetch('/api/global-stats')
+          .then(res => {
+            if (!res.ok) throw new Error('HTTP status ' + res.status);
+            return res.json();
+          })
+          .then(data => {
+            if (data) {
+              if (typeof data.totalHits === 'number') {
+                document.getElementById('kpiHits').innerText = data.totalHits.toLocaleString();
+              }
+              if (typeof data.totalBenchmarks === 'number') {
+                document.getElementById('kpiBenchmarks').innerText = data.totalBenchmarks.toLocaleString();
+              }
+              if (typeof data.totalDomains === 'number') {
+                document.getElementById('kpiDomains').innerText = data.totalDomains.toLocaleString();
+              }
+            }
+          })
+          .catch(e => console.error('Error fetching global stats:', e));
+      }
+
+      function initCharts() {
+        const ctxVol = document.getElementById('reqVolumeChart').getContext('2d');
+        reqVolumeChart = new Chart(ctxVol, {
+          type: 'doughnut',
+          data: {
+            labels: ['Success', 'Blocked (403/429)', 'Failed'],
+            datasets: [{
+              data: [0, 0, 0],
+              backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: { color: '#94a3b8', boxWidth: 12, font: { family: 'Plus Jakarta Sans' } }
+              }
+            }
+          }
+        });
+
+        const ctxTrend = document.getElementById('latencyTrendChart').getContext('2d');
+        latencyTrendChart = new Chart(ctxTrend, {
+          type: 'line',
+          data: {
+            labels: [],
+            datasets: [
+              {
+                label: 'Avg Latency (ms)',
+                data: [],
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                fill: true,
+                tension: 0.3,
+                borderWidth: 2,
+                pointRadius: 4
+              },
+              {
+                label: 'Avg Req/sec',
+                data: [],
+                borderColor: '#10b981',
+                backgroundColor: 'transparent',
+                fill: false,
+                tension: 0.3,
+                borderWidth: 1.5,
+                pointRadius: 3,
+                yAxisID: 'y1'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans' } }
+              }
+            },
+            scales: {
+              y: {
+                title: { display: true, text: 'Latency (ms)', color: '#94a3b8' },
+                grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                ticks: { color: '#94a3b8' }
+              },
+              y1: {
+                title: { display: true, text: 'Req/Sec', color: '#94a3b8' },
+                position: 'right',
+                grid: { drawOnChartArea: false },
+                ticks: { color: '#94a3b8' }
+              },
+              x: {
+                grid: { display: false },
+                ticks: { color: '#94a3b8' }
+              }
+            }
+          }
+        });
+
+        const ctxComp = document.getElementById('domainsComparisonChart').getContext('2d');
+        domainsComparisonChart = new Chart(ctxComp, {
+          type: 'bar',
+          data: {
+            labels: [],
+            datasets: [
+              {
+                label: 'Avg Latency (ms)',
+                data: [],
+                backgroundColor: 'rgba(59, 130, 246, 0.65)',
+                borderColor: '#3b82f6',
+                borderWidth: 1.5,
+                borderRadius: 4
+              },
+              {
+                label: 'Avg Req/sec',
+                data: [],
+                backgroundColor: 'rgba(16, 185, 129, 0.65)',
+                borderColor: '#10b981',
+                borderWidth: 1.5,
+                borderRadius: 4,
+                yAxisID: 'y1'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans' } }
+              }
+            },
+            scales: {
+              y: {
+                title: { display: true, text: 'Latency (ms)', color: '#94a3b8' },
+                grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                ticks: { color: '#94a3b8' }
+              },
+              y1: {
+                title: { display: true, text: 'Req/Sec', color: '#94a3b8' },
+                position: 'right',
+                grid: { drawOnChartArea: false },
+                ticks: { color: '#94a3b8' }
+              },
+              x: {
+                grid: { display: false },
+                ticks: { color: '#94a3b8' }
+              }
+            }
+          }
+        });
+
+        // Fetch domains comparison data on init
+        updateDomainsComparisonChart();
+      }
+
+      function updateDomainsComparisonChart() {
+        fetch('/api/domain-insights')
+          .then(res => {
+            if (!res.ok) throw new Error('HTTP status ' + res.status);
+            return res.json();
+          })
+          .then(data => {
+            if (!Array.isArray(data) || data.length === 0) return;
+            
+            const labels = data.map(d => d.domain);
+            const latencyData = data.map(d => d.avg_latency);
+            const reqSecData = data.map(d => d.avg_req_per_sec);
+
+            domainsComparisonChart.data.labels = labels;
+            domainsComparisonChart.data.datasets[0].data = latencyData;
+            domainsComparisonChart.data.datasets[1].data = reqSecData;
+            domainsComparisonChart.update();
+          })
+          .catch(e => console.error('Error fetching domains comparison:', e));
+      }
+
+      function checkActiveTests() {
+        fetch('/api/active-tests')
+          .then(res => {
+            if (!res.ok) throw new Error('HTTP status ' + res.status);
+            return res.json();
+          })
+          .then(activeTests => {
+            if (!Array.isArray(activeTests)) return;
+            const banner = document.getElementById('activeTestsBanner');
+            const pulse = document.getElementById('statusPulse');
+            if (activeTests.length > 0) {
+              banner.style.background = 'rgba(59, 130, 246, 0.15)';
+              banner.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+              banner.querySelector('span').innerText = `${activeTests.length} active load test${activeTests.length > 1 ? 's' : ''} running currently`;
+              pulse.style.display = 'block';
+            } else {
+              banner.style.background = 'rgba(255, 255, 255, 0.02)';
+              banner.style.borderColor = 'var(--border-color)';
+              banner.querySelector('span').innerText = 'System Ready. No active attacks.';
+              pulse.style.display = 'none';
+            }
+          })
+          .catch(e => console.error(e));
+      }
+
+      function loadDomainList(filterTerm = "") {
+        fetch('/api/domain-insights')
+          .then(res => {
+            if (!res.ok) throw new Error('HTTP status ' + res.status);
+            return res.json();
+          })
+          .then(data => {
+            const listContainer = document.getElementById('domainList');
+            listContainer.innerHTML = '';
+
+            if (!Array.isArray(data)) {
+              listContainer.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-secondary);">Failed to load domains</div>';
+              return;
+            }
+
+            let filtered = data;
+            if (filterTerm) {
+              filtered = data.filter(d => d.domain.toLowerCase().includes(filterTerm.toLowerCase()));
+            }
+
+            if (filtered.length === 0) {
+              listContainer.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-secondary);">No domains found</div>';
+              return;
+            }
+
+            filtered.forEach((d, idx) => {
+              const item = document.createElement('div');
+              item.className = 'domain-item';
+              if (selectedDomain === d.domain || (!selectedDomain && idx === 0)) {
+                item.classList.add('active');
+                if (!selectedDomain) {
+                  selectDomain(d.domain);
+                }
+              }
+              item.innerHTML = `
+                <span>${d.domain}</span>
+                <span class="domain-count">${d.total_attacks} runs</span>
+              `;
+              item.addEventListener('click', () => {
+                document.querySelectorAll('.domain-item').forEach(el => el.classList.remove('active'));
+                item.classList.add('active');
+                selectDomain(d.domain);
+              });
+              listContainer.appendChild(item);
+            });
+            // Update comparison chart whenever domain list changes
+            updateDomainsComparisonChart();
+          })
+          .catch(e => {
+            console.error(e);
+            const listContainer = document.getElementById('domainList');
+            if (listContainer) {
+              listContainer.innerHTML = '<div style="padding: 1rem; text-align: center; color: #f87171;">Database connection offline.</div>';
+            }
+          });
+      }
+
+      function selectDomain(domain) {
+        selectedDomain = domain;
+        fetch(`/api/domain-insights?domain=${encodeURIComponent(domain)}`)
+          .then(res => {
+            if (!res.ok) throw new Error('HTTP status ' + res.status);
+            return res.json();
+          })
+          .then(data => {
+            if (!data) return;
+            const stats = data.stats;
+            const history = data.historyPoints;
+            
+            if (!stats) return;
+
+            document.getElementById('mergedInfoBox').style.display = 'block';
+            document.getElementById('mergedDomainName').innerText = stats.domain;
+            document.getElementById('mergedAttacks').innerText = stats.total_attacks;
+            document.getElementById('mergedRequests').innerText = stats.total_requests.toLocaleString();
+            document.getElementById('mergedReqSec').innerText = stats.avg_req_per_sec.toFixed(2);
+            document.getElementById('mergedLatency').innerText = `${stats.avg_latency.toFixed(2)} ms`;
+            document.getElementById('mergedMaxLatency').innerText = `${stats.max_latency.toFixed(2)} ms`;
+
+            // Populate Merged Stats Table
+            document.getElementById('tableMergedAttacks').innerText = stats.total_attacks;
+            document.getElementById('tableMergedRequests').innerText = stats.total_requests.toLocaleString();
+            document.getElementById('tableMergedSuccess').innerText = stats.success_requests.toLocaleString();
+            document.getElementById('tableMergedBlocked').innerText = stats.blocked_requests.toLocaleString();
+            document.getElementById('tableMergedFailed').innerText = stats.failed_requests.toLocaleString();
+            document.getElementById('tableMergedReqSec').innerText = stats.avg_req_per_sec.toFixed(2);
+            document.getElementById('tableMergedLatency').innerText = `${stats.avg_latency.toFixed(2)} ms`;
+            document.getElementById('tableMergedMaxLatency').innerText = `${stats.max_latency.toFixed(2)} ms`;
+
+            // Update Doughnut Chart (Requests Breakdown)
+            reqVolumeChart.data.datasets[0].data = [
+              stats.success_requests,
+              stats.blocked_requests,
+              stats.failed_requests
+            ];
+            reqVolumeChart.update();
+
+            // Update Line Chart (Latency Trend)
+            if (Array.isArray(history)) {
+              const labels = history.map((h, i) => `#${i + 1}`);
+              const latencyData = history.map(h => h.avg_latency);
+              const reqSecData = history.map(h => h.avg_req_per_sec);
+
+              latencyTrendChart.data.labels = labels;
+              latencyTrendChart.data.datasets[0].data = latencyData;
+              latencyTrendChart.data.datasets[1].data = reqSecData;
+              latencyTrendChart.update();
+            }
+          })
+          .catch(e => console.error(e));
+      }
+
+      function fetchHistory() {
+        const search = document.getElementById('historySearch').value;
+        const url = `/api/history?search=${encodeURIComponent(search)}&sortBy=${currentSortBy}&sortOrder=${currentSortOrder}`;
+
+        fetch(url)
+          .then(res => {
+            if (!res.ok) throw new Error('HTTP status ' + res.status);
+            return res.json();
+          })
+          .then(history => {
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = '';
+
+            if (!Array.isArray(history)) {
+              tbody.innerHTML = '<tr><td colspan="10" class="empty-state" style="color: #f87171;">Database connection offline. Historical data could not be retrieved.</td></tr>';
+              return;
+            }
+
+            if (history.length === 0) {
+              tbody.innerHTML = '<tr><td colspan="10" class="empty-state">No performance runs found matching search criteria.</td></tr>';
+              return;
+            }
+
+            history.forEach(item => {
+              const tr = document.createElement('tr');
+              
+              const statusPill = item.status === 'completed' 
+                ? '<span class="pill success">Completed</span>' 
+                : `<span class="pill warning" title="${item.stop_reason || ''}">Rate Limit Stop</span>`;
+
+              tr.innerHTML = `
+                <td>${item.id}</td>
+                <td class="url-cell" title="Click to filter domain analytics" onclick="filterBySelectedUrl('${item.tested_url}')">${item.tested_url}</td>
+                <td>${item.connections}</td>
+                <td>${item.duration}s</td>
+                <td>${(item.avg_req_per_sec || 0).toFixed(2)}</td>
+                <td>${(item.avg_latency || 0).toFixed(2)} ms</td>
+                <td>${(item.success_requests || 0).toLocaleString()}</td>
+                <td>${(item.blocked_requests || 0).toLocaleString()}</td>
+                <td>${statusPill}</td>
+                <td>${new Date(item.created_at).toLocaleString()}</td>
+              `;
+              tbody.appendChild(tr);
+            });
+          })
+          .catch(e => {
+            console.error(e);
+            const tbody = document.getElementById('historyTableBody');
+            if (tbody) {
+              tbody.innerHTML = '<tr><td colspan="10" class="empty-state" style="color: #f87171;">Database connection offline. Historical data could not be retrieved.</td></tr>';
+            }
+          });
+      }
+
+      function filterBySelectedUrl(urlStr) {
+        // Extract domain and filter domain selector
+        try {
+          let cleanUrl = urlStr.trim();
+          if (!/^https?:\/\//i.test(cleanUrl)) {
+            cleanUrl = "http://" + cleanUrl;
+          }
+          const parsed = new URL(cleanUrl);
+          const domain = parsed.hostname;
+          
+          document.getElementById('domainSearch').value = domain;
+          loadDomainList(domain);
+          selectDomain(domain);
+        } catch(e) {
+          console.error(e);
+        }
+      }
+    </script>
+  </body>
+</html>

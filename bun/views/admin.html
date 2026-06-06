@@ -1,0 +1,914 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Load Monitor Admin Dashboard</title>
+    <!-- Modern Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      :root {
+        --bg-main: #0b0f19;
+        --bg-card: rgba(20, 26, 46, 0.6);
+        --bg-card-hover: rgba(28, 36, 62, 0.8);
+        --border-color: rgba(255, 255, 255, 0.08);
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
+        --color-accent: #3b82f6;
+        --color-accent-glow: rgba(59, 130, 246, 0.3);
+        --color-success: #10b981;
+        --color-warning: #f59e0b;
+        --color-danger: #ef4444;
+        --font-sans: 'Plus Jakarta Sans', sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background: var(--bg-main);
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        min-height: 100vh;
+        padding: 2rem;
+        background-image: radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 40%),
+                          radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.03) 0%, transparent 40%);
+      }
+
+      /* Login Wall Styles */
+      #authWall {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 80vh;
+      }
+
+      .auth-card {
+        background: var(--bg-card);
+        backdrop-filter: blur(16px);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 2.5rem;
+        width: 100%;
+        max-width: 400px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        text-align: center;
+      }
+
+      .auth-card h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        background: linear-gradient(135deg, #60a5fa 0%, #34d399 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .form-group {
+        margin-bottom: 1.5rem;
+        text-align: left;
+      }
+
+      .form-group label {
+        display: block;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+      }
+
+      .form-control {
+        width: 100%;
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+      }
+
+      .form-control:focus {
+        outline: none;
+        border-color: var(--color-accent);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+      }
+
+      .btn {
+        width: 100%;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 0.85rem;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+      }
+
+      .btn-danger {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
+      }
+
+      .btn-danger:hover {
+        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+      }
+
+      .btn-secondary {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+        box-shadow: none;
+      }
+
+      .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.1);
+        box-shadow: none;
+      }
+
+      .error-msg {
+        color: var(--color-danger);
+        font-size: 0.85rem;
+        margin-top: 1rem;
+        display: none;
+      }
+
+      /* Admin Content Layout */
+      #adminContent {
+        display: none;
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2.5rem;
+      }
+
+      .logo-section h1 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #60a5fa 0%, #34d399 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .logo-section p {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin-top: 0.2rem;
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 1rem;
+      }
+
+      .nav-btn {
+        text-decoration: none;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border-color);
+        color: var(--text-secondary);
+        padding: 0.6rem 1.2rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border: 1px solid transparent;
+      }
+
+      .nav-btn:hover {
+        color: var(--text-primary);
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .nav-btn.active {
+        color: #60a5fa;
+        background: rgba(59, 130, 246, 0.1);
+        border-color: rgba(59, 130, 246, 0.2);
+      }
+
+      /* KPI Grid */
+      .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2.5rem;
+      }
+
+      .kpi-card {
+        background: var(--bg-card);
+        backdrop-filter: blur(16px);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+      }
+
+      .kpi-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(255, 255, 255, 0.15);
+      }
+
+      .kpi-title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+      }
+
+      .kpi-value {
+        font-size: 2.25rem;
+        font-weight: 700;
+        color: #3b82f6;
+      }
+
+      .kpi-value.green { color: #10b981; }
+      .kpi-value.purple { color: #8b5cf6; }
+
+      /* Control Panels */
+      .control-grid {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 2rem;
+        margin-bottom: 2.5rem;
+      }
+
+      @media (max-width: 1024px) {
+        .control-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .panel {
+        background: var(--bg-card);
+        backdrop-filter: blur(16px);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 1.75rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        height: fit-content;
+      }
+
+      .panel h2 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1.25rem;
+        color: #93c5fd;
+      }
+
+      .btn-row {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      /* Active Tests Table */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.88rem;
+        text-align: left;
+      }
+
+      th, td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      th {
+        color: var(--text-secondary);
+        font-weight: 600;
+        background: rgba(15, 23, 42, 0.4);
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: var(--text-secondary);
+      }
+
+      /* Node Metrics Cards Container */
+      .nodes-container {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+      }
+
+      .node-card {
+        background: var(--bg-card);
+        backdrop-filter: blur(16px);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 2rem;
+      }
+
+      .node-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .node-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #34d399;
+      }
+
+      .node-meta {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+      }
+
+      .node-status-pill {
+        display: inline-block;
+        padding: 0.25rem 0.6rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+
+      .node-status-pill.active {
+        background: rgba(16, 185, 129, 0.15);
+        color: #34d399;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+      }
+
+      .node-status-pill.offline {
+        background: rgba(148, 163, 184, 0.15);
+        color: #94a3b8;
+        border: 1px solid rgba(148, 163, 184, 0.3);
+      }
+
+      .node-charts-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+      }
+
+      @media (max-width: 768px) {
+        .node-charts-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .chart-box {
+        background: rgba(15, 23, 42, 0.4);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.25rem;
+        height: 280px;
+        position: relative;
+      }
+
+      .chart-title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 0.75rem;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 1. Authentication Wall -->
+    <div id="authWall">
+      <div class="auth-card">
+        <h2>Admin Portal</h2>
+        <div class="form-group">
+          <label for="adminPassword">Enter Admin Password</label>
+          <input type="password" id="adminPassword" class="form-control" placeholder="Password..." />
+        </div>
+        <button class="btn" onclick="authenticate()">Unlock Dashboard</button>
+        <div class="error-msg" id="authError">Invalid admin password. Please try again.</div>
+      </div>
+    </div>
+
+    <!-- 2. Main Dashboard Content -->
+    <div id="adminContent">
+      <header>
+        <div class="logo-section">
+          <h1>Cluster Administration</h1>
+          <p>Real-time Telemetry, Log Integration, and Process Node Management</p>
+        </div>
+        <div class="header-actions">
+          <a href="/dashboard" class="nav-btn">Public Dashboard</a>
+          <button class="nav-btn active" onclick="syncLogs()">Update / Sync Logs</button>
+          <button class="nav-btn" style="background: rgba(239, 68, 68, 0.1);" onclick="logout()">Logout</button>
+        </div>
+      </header>
+
+      <!-- Cluster-wide Statistics -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-title">Active Server Nodes</div>
+          <div class="kpi-value" id="kpiActiveNodes">0</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Cluster Total Load</div>
+          <div class="kpi-value green" id="kpiClusterReq">0.00 req/s</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Cluster Bandwidth</div>
+          <div class="kpi-value purple" id="kpiClusterThroughput">0.00 KB/s</div>
+        </div>
+      </div>
+
+      <!-- Cluster Aggregated Metrics Summary Table -->
+      <div class="panel" style="margin-bottom: 2.5rem;">
+        <h2>Cluster Aggregated Metrics Summary</h2>
+        <div style="overflow-x: auto; margin-top: 1rem; width: 100%;">
+          <table style="width: 100%; text-align: left; border-collapse: collapse;">
+            <thead>
+              <tr style="background: rgba(15, 23, 42, 0.4);">
+                <th style="padding: 12px;">Active Nodes</th>
+                <th style="padding: 12px;">Average CPU Usage</th>
+                <th style="padding: 12px;">Total Memory Usage</th>
+                <th style="padding: 12px;">Total Request Rate</th>
+                <th style="padding: 12px;">Total Bandwidth Throughput</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="font-weight: bold; font-size: 1.1rem; color: #60a5fa;">
+                <td id="sumActiveNodes" style="padding: 16px 12px; border-bottom: 1px solid var(--border-color);">0</td>
+                <td id="sumCpu" style="padding: 16px 12px; border-bottom: 1px solid var(--border-color); color: #34d399;">0.00 %</td>
+                <td id="sumMemory" style="padding: 16px 12px; border-bottom: 1px solid var(--border-color); color: #8b5cf6;">0.00 MB</td>
+                <td id="sumReq" style="padding: 16px 12px; border-bottom: 1px solid var(--border-color); color: #10b981;">0.00 req/s</td>
+                <td id="sumThroughput" style="padding: 16px 12px; border-bottom: 1px solid var(--border-color); color: #f59e0b;">0.00 KB/s</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Controls and Active Tests -->
+      <div class="control-grid">
+        <div class="panel">
+          <h2>Administration Controls</h2>
+          <div class="btn-row">
+            <button class="btn btn-secondary" onclick="syncLogs()">Sync & Fetch Raw Logs</button>
+            <button class="btn btn-danger" onclick="clearHistory()">Clear MongoDB Run Ledger</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Active Load Test Sessions</h2>
+          <div style="overflow-x: auto; width: 100%;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Test ID</th>
+                  <th>Target URL</th>
+                  <th>Connections</th>
+                  <th>Duration</th>
+                  <th>Status</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="activeTestsBody">
+                <tr>
+                  <td colspan="6" class="empty-state">No active tests running.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Individual Process Nodes Telemetry -->
+      <section style="margin-top: 2rem;">
+        <h2 style="font-size: 1.25rem; font-weight: 600; color: #93c5fd; margin-bottom: 1.5rem;">Cluster Node Performance Charts</h2>
+        <div class="nodes-container" id="nodesContainer">
+          <div class="panel" style="text-align: center; color: var(--text-secondary); padding: 3rem;">
+            Click "Update / Sync Logs" to load replica telemetry charts.
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      let nodeCharts = {}; // Map to hold references to Chart.js objects by node ID
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const savedPass = localStorage.getItem('adminPassword');
+        if (savedPass) {
+          verifyPassword(savedPass);
+        }
+      });
+
+      function authenticate() {
+        const pass = document.getElementById('adminPassword').value;
+        verifyPassword(pass);
+      }
+
+      function logout() {
+        localStorage.removeItem('adminPassword');
+        document.getElementById('authWall').style.display = 'flex';
+        document.getElementById('adminContent').style.display = 'none';
+        document.getElementById('adminPassword').value = '';
+      }
+
+      function verifyPassword(pass) {
+        fetch(`/api/admin/verify?password=${encodeURIComponent(pass)}`)
+          .then(res => {
+            if (res.ok) return res.json();
+            throw new Error('Unauthorized');
+          })
+          .then(data => {
+            localStorage.setItem('adminPassword', pass);
+            document.getElementById('authWall').style.display = 'none';
+            document.getElementById('adminContent').style.display = 'block';
+            document.getElementById('authError').style.display = 'none';
+            
+            // Trigger initial data load
+            syncLogs();
+            loadActiveTests();
+            setInterval(loadActiveTests, 4000);
+          })
+          .catch(err => {
+            document.getElementById('authError').style.display = 'block';
+            logout();
+          });
+      }
+
+      function getPassword() {
+        return localStorage.getItem('adminPassword') || '';
+      }
+
+      function loadActiveTests() {
+        fetch('/api/active-tests')
+          .then(res => res.json())
+          .then(tests => {
+            const tbody = document.getElementById('activeTestsBody');
+            tbody.innerHTML = '';
+            if (!tests || tests.length === 0) {
+              tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No active tests running.</td></tr>';
+              return;
+            }
+            tests.forEach(t => {
+              const tr = document.createElement('tr');
+              tr.innerHTML = `
+                <td>${t.id}</td>
+                <td>${t.url}</td>
+                <td>${t.connections}</td>
+                <td>${t.duration}s</td>
+                <td><span style="color: var(--color-success); font-weight: bold;">RUNNING</span></td>
+                <td style="text-align: right;">
+                  <button class="btn btn-danger" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; width: auto;" onclick="stopTest('${t.id}')">Stop</button>
+                </td>
+              `;
+              tbody.appendChild(tr);
+            });
+          })
+          .catch(e => console.error('Error loading active tests:', e));
+      }
+
+      function stopTest(testId) {
+        if (!confirm(`Are you sure you want to stop active test ${testId}?`)) return;
+        const pass = getPassword();
+        fetch(`/api/admin/stop-test?id=${testId}&password=${encodeURIComponent(pass)}`, { method: 'POST' })
+          .then(res => {
+            if (res.ok) {
+              alert('Test stopped successfully');
+              loadActiveTests();
+            } else {
+              alert('Failed to stop test');
+            }
+          })
+          .catch(e => console.error(e));
+      }
+
+      function clearHistory() {
+        if (!confirm('Warning: This will permanently delete all benchmark history logs from the database. Proceed?')) return;
+        const pass = getPassword();
+        fetch(`/api/admin/clear-history?password=${encodeURIComponent(pass)}`, { method: 'POST' })
+          .then(res => {
+            if (res.ok) {
+              alert('Benchmark run database history cleared successfully.');
+            } else {
+              alert('Failed to clear benchmark history.');
+            }
+          })
+          .catch(e => console.error(e));
+      }
+
+      function syncLogs() {
+        const pass = getPassword();
+        const nodesContainer = document.getElementById('nodesContainer');
+
+        fetch(`/api/admin/sync-logs?password=${encodeURIComponent(pass)}`)
+          .then(res => {
+            if (!res.ok) throw new Error('Sync failed');
+            return res.json();
+          })
+          .then(data => {
+            const nodes = data.nodes || {};
+            const activeNodeIds = Object.keys(nodes);
+
+            // Filter active nodes (heartbeat within last 30 seconds)
+            const onlineNodeIds = activeNodeIds.filter(nodeId => {
+              const timeline = nodes[nodeId] || [];
+              if (timeline.length === 0) return false;
+              const lastPoint = timeline[timeline.length - 1];
+              const timestampDiff = Date.now() - new Date(lastPoint.timestamp).getTime();
+              return timestampDiff < 30000;
+            });
+
+            // Sort active nodes so that the most recently active ones appear first (newly active/created on top)
+            const sortedActiveNodeIds = onlineNodeIds.sort((a, b) => {
+              const timeA = new Date(nodes[a][nodes[a].length - 1].timestamp).getTime();
+              const timeB = new Date(nodes[b][nodes[b].length - 1].timestamp).getTime();
+              return timeB - timeA;
+            });
+
+            if (sortedActiveNodeIds.length === 0) {
+              nodesContainer.innerHTML = '<div class="panel" style="text-align: center; color: var(--text-secondary); padding: 3rem;">No active server nodes online.</div>';
+              document.getElementById('kpiActiveNodes').innerText = '0';
+              document.getElementById('kpiClusterReq').innerText = '0.00 req/s';
+              document.getElementById('kpiClusterThroughput').innerText = '0.00 KB/s';
+              return;
+            }
+
+            // Remove loading placeholder or offline cards from DOM and memory
+            if (nodesContainer.querySelector('.panel')) {
+              nodesContainer.innerHTML = '';
+            }
+
+            document.querySelectorAll('.node-card').forEach(card => {
+              const id = card.id.replace('node-card-', '');
+              if (!sortedActiveNodeIds.includes(id)) {
+                card.remove();
+                if (nodeCharts[id]) {
+                  nodeCharts[id].res.destroy();
+                  nodeCharts[id].traffic.destroy();
+                  delete nodeCharts[id];
+                }
+              }
+            });
+
+            let totalClusterReq = 0;
+            let totalClusterThroughput = 0;
+            let totalClusterCpu = 0;
+            let totalClusterMemory = 0;
+            let activeNodesCount = 0;
+
+            sortedActiveNodeIds.forEach(nodeId => {
+              const timeline = nodes[nodeId];
+              const lastPoint = timeline[timeline.length - 1];
+
+              activeNodesCount++;
+              totalClusterReq += lastPoint.reqPerSec;
+              totalClusterThroughput += lastPoint.throughputKbps;
+              totalClusterCpu += lastPoint.cpuPercent;
+              totalClusterMemory += lastPoint.memoryUsedMb;
+
+              let card = document.getElementById(`node-card-${nodeId}`);
+              if (!card) {
+                card = document.createElement('div');
+                card.id = `node-card-${nodeId}`;
+                card.className = 'node-card';
+                card.innerHTML = `
+                  <div class="node-header">
+                    <div>
+                      <span class="node-title">${nodeId}</span>
+                      <span class="node-meta" style="margin-left: 1rem;" id="meta-${nodeId}">Host: ${lastPoint.hostname} | PID: ${lastPoint.pid}</span>
+                    </div>
+                    <span id="status-${nodeId}" class="node-status-pill active">Active</span>
+                  </div>
+                  
+                  <!-- Real-time Data Table for Node -->
+                  <div style="margin-bottom: 1.5rem; overflow-x: auto;">
+                    <table style="width: 100%; font-size: 0.85rem; background: rgba(15, 23, 42, 0.2); border-radius: 8px; border: 1px solid var(--border-color);">
+                      <thead>
+                        <tr style="background: rgba(15, 23, 42, 0.4);">
+                          <th style="padding: 8px 12px; border-bottom: 1px solid var(--border-color);">Metric</th>
+                          <th style="padding: 8px 12px; border-bottom: 1px solid var(--border-color); text-align: right;">Current Value</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td style="padding: 8px 12px; border-bottom: 1px solid var(--border-color);">CPU Utilization</td>
+                          <td id="val-cpu-${nodeId}" style="padding: 8px 12px; border-bottom: 1px solid var(--border-color); text-align: right; font-weight: bold; color: #60a5fa;">0.00 %</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 8px 12px; border-bottom: 1px solid var(--border-color);">Memory Footprint</td>
+                          <td id="val-mem-${nodeId}" style="padding: 8px 12px; border-bottom: 1px solid var(--border-color); text-align: right; font-weight: bold; color: #8b5cf6;">0.00 MB</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 8px 12px; border-bottom: 1px solid var(--border-color);">Request Rate</td>
+                          <td id="val-req-${nodeId}" style="padding: 8px 12px; border-bottom: 1px solid var(--border-color); text-align: right; font-weight: bold; color: #34d399;">0.00 req/s</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 8px 12px;">Bandwidth Throughput</td>
+                          <td id="val-throughput-${nodeId}" style="padding: 8px 12px; text-align: right; font-weight: bold; color: #f59e0b;">0.00 KB/s</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div class="node-charts-grid">
+                    <div class="chart-box">
+                      <div class="chart-title">CPU & Memory Utilization</div>
+                      <canvas id="chart-res-${nodeId}"></canvas>
+                    </div>
+                    <div class="chart-box">
+                      <div class="chart-title">Requests Rate & Throughput</div>
+                      <canvas id="chart-traffic-${nodeId}"></canvas>
+                    </div>
+                  </div>
+                `;
+                nodesContainer.appendChild(card);
+                initNodeCharts(nodeId, timeline);
+              } else {
+                // Re-append existing card to move it to the correct DOM sorted order
+                nodesContainer.appendChild(card);
+                
+                document.getElementById(`meta-${nodeId}`).innerText = `Host: ${lastPoint.hostname} | PID: ${lastPoint.pid}`;
+                updateNodeCharts(nodeId, timeline);
+              }
+
+              // Update real-time table values for this node
+              document.getElementById(`val-cpu-${nodeId}`).innerText = `${lastPoint.cpuPercent.toFixed(2)} %`;
+              document.getElementById(`val-mem-${nodeId}`).innerText = `${lastPoint.memoryUsedMb.toFixed(2)} MB`;
+              document.getElementById(`val-req-${nodeId}`).innerText = `${lastPoint.reqPerSec.toFixed(2)} req/s`;
+              document.getElementById(`val-throughput-${nodeId}`).innerText = `${lastPoint.throughputKbps.toFixed(2)} KB/s`;
+            });
+
+            // Update KPI aggregates
+            document.getElementById('kpiActiveNodes').innerText = activeNodesCount.toString();
+            document.getElementById('kpiClusterReq').innerText = `${totalClusterReq.toFixed(2)} req/s`;
+            document.getElementById('kpiClusterThroughput').innerText = `${totalClusterThroughput.toFixed(2)} KB/s`;
+
+            // Update Cluster Aggregated Metrics Summary Panel Table
+            const avgCpu = activeNodesCount > 0 ? (totalClusterCpu / activeNodesCount) : 0;
+            document.getElementById('sumActiveNodes').innerText = activeNodesCount.toString();
+            document.getElementById('sumCpu').innerText = `${avgCpu.toFixed(2)} %`;
+            document.getElementById('sumMemory').innerText = `${totalClusterMemory.toFixed(2)} MB`;
+            document.getElementById('sumReq').innerText = `${totalClusterReq.toFixed(2)} req/s`;
+            document.getElementById('sumThroughput').innerText = `${totalClusterThroughput.toFixed(2)} KB/s`;
+          })
+          .catch(e => {
+            console.error('Logs sync failed:', e);
+          });
+      }
+
+      function initNodeCharts(nodeId, timeline) {
+        const labels = timeline.map(t => new Date(t.timestamp).toLocaleTimeString());
+        
+        // 1. Resource Chart
+        const ctxRes = document.getElementById(`chart-res-${nodeId}`).getContext('2d');
+        const chartRes = new Chart(ctxRes, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: 'CPU Usage (%)',
+                data: timeline.map(t => t.cpuPercent),
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.05)',
+                borderWidth: 2,
+                pointRadius: 2,
+                tension: 0.3,
+                yAxisID: 'y'
+              },
+              {
+                label: 'Memory (MB)',
+                data: timeline.map(t => t.memoryUsedMb),
+                borderColor: '#8b5cf6',
+                backgroundColor: 'rgba(139, 92, 246, 0.05)',
+                borderWidth: 2,
+                pointRadius: 2,
+                tension: 0.3,
+                yAxisID: 'y1'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { labels: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans', size: 10 } } }
+            },
+            scales: {
+              y: {
+                title: { display: true, text: 'CPU (%)', color: '#94a3b8' },
+                ticks: { color: '#94a3b8' },
+                grid: { color: 'rgba(255, 255, 255, 0.03)' }
+              },
+              y1: {
+                title: { display: true, text: 'Memory (MB)', color: '#94a3b8' },
+                position: 'right',
+                ticks: { color: '#94a3b8' },
+                grid: { display: false }
+              },
+              x: {
+                ticks: { color: '#94a3b8', maxRotation: 0, autoSkip: true, maxTicksLimit: 6 },
+                grid: { display: false }
+              }
+            }
+          }
+        });
+
+        // 2. Traffic Chart
+        const ctxTraffic = document.getElementById(`chart-traffic-${nodeId}`).getContext('2d');
+        const chartTraffic = new Chart(ctxTraffic, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: 'Req Rate (req/s)',
+                data: timeline.map(t => t.reqPerSec),
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.05)',
+                borderWidth: 2,
+                pointRadius: 2,
+                tension: 0.3,
+                yAxisID: 'y'
+              },
+              {
+                label: 'Throughput (KB/s)',
+                data: timeline.map(t => t.throughputKbps),
+                borderColor: '#f59e0b',
+                backgroundColor: 'rgba(245, 158, 11, 0.05)',
+                borderWidth: 1.5,
+                pointRadius: 2,
+                tension: 0.3,
+                yAxisID: 'y1'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { labels: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans', size: 10 } } }
+            },
+            scales: {
+              y: {
+                title: { display: true, text: 'Requests/sec', color: '#94a3b8' },
+                ticks: { color: '#94a3b8' },
+                grid: { color: 'rgba(255, 255, 255, 0.03)' }
+              },
+              y1: {
+                title: { display: true, text: 'Throughput (KB/s)', color: '#94a3b8' },
+                position: 'right',
+                ticks: { color: '#94a3b8' },
+                grid: { display: false }
+              },
+              x: {
+                ticks: { color: '#94a3b8', maxRotation: 0, autoSkip: true, maxTicksLimit: 6 },
+                grid: { display: false }
+              }
+            }
+          }
+        });
+
+        nodeCharts[nodeId] = { res: chartRes, traffic: chartTraffic };
+      }
+
+      function updateNodeCharts(nodeId, timeline) {
+        if (!nodeCharts[nodeId]) return;
+
+        const labels = timeline.map(t => new Date(t.timestamp).toLocaleTimeString());
+        
+        // Update Resource Chart data
+        const chartRes = nodeCharts[nodeId].res;
+        chartRes.data.labels = labels;
+        chartRes.data.datasets[0].data = timeline.map(t => t.cpuPercent);
+        chartRes.data.datasets[1].data = timeline.map(t => t.memoryUsedMb);
+        chartRes.update('none'); // Update without animation for smoother updates
+
+        // Update Traffic Chart data
+        const chartTraffic = nodeCharts[nodeId].traffic;
+        chartTraffic.data.labels = labels;
+        chartTraffic.data.datasets[0].data = timeline.map(t => t.reqPerSec);
+        chartTraffic.data.datasets[1].data = timeline.map(t => t.throughputKbps);
+        chartTraffic.update('none');
+      }
+    </script>
+  </body>
+</html>

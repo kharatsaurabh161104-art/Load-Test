@@ -1,0 +1,725 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Load Performance Test Runner</title>
+    <!-- Modern Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      :root {
+        --bg-main: #0b0f19;
+        --bg-card: rgba(20, 26, 46, 0.6);
+        --bg-card-hover: rgba(28, 36, 62, 0.8);
+        --border-color: rgba(255, 255, 255, 0.08);
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
+        --color-accent: #3b82f6;
+        --color-accent-glow: rgba(59, 130, 246, 0.5);
+        --color-success: #10b981;
+        --color-success-glow: rgba(16, 185, 129, 0.3);
+        --color-warning: #f59e0b;
+        --color-warning-glow: rgba(245, 158, 11, 0.3);
+        --color-danger: #ef4444;
+        --color-danger-glow: rgba(239, 68, 68, 0.3);
+        --font-sans: 'Plus Jakarta Sans', sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background: var(--bg-main);
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        min-height: 100vh;
+        padding: 2rem;
+        background-image: radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 40%),
+                          radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.03) 0%, transparent 40%);
+      }
+
+      header {
+        max-width: 1200px;
+        margin: 0 auto 2.5rem auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .logo-section h1 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #60a5fa 0%, #34d399 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: -0.5px;
+      }
+
+      .logo-section p {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin-top: 0.2rem;
+      }
+
+      nav {
+        display: flex;
+        gap: 1rem;
+      }
+
+      nav a {
+        text-decoration: none;
+        color: var(--text-secondary);
+        padding: 0.6rem 1.2rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border: 1px solid transparent;
+      }
+
+      nav a:hover {
+        color: var(--text-primary);
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      nav a.active {
+        color: #60a5fa;
+        background: rgba(59, 130, 246, 0.1);
+        border-color: rgba(59, 130, 246, 0.2);
+      }
+
+      main {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1fr 1.5fr;
+        gap: 2rem;
+      }
+
+      @media (max-width: 968px) {
+        main {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .card {
+        background: var(--bg-card);
+        backdrop-filter: blur(16px);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        height: fit-content;
+      }
+
+      .card h2 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        color: #93c5fd;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .form-group {
+        margin-bottom: 1.25rem;
+      }
+
+      .form-group label {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        color: var(--text-secondary);
+      }
+
+      .form-control {
+        width: 100%;
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+      }
+
+      .form-control:focus {
+        outline: none;
+        border-color: var(--color-accent);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+      }
+
+      .form-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+      }
+
+      .btn {
+        width: 100%;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 0.85rem 1.5rem;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 1.5rem;
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+      }
+
+      .btn:active {
+        transform: translateY(0);
+      }
+
+      .btn:disabled {
+        background: #334155;
+        color: var(--text-secondary);
+        cursor: not-allowed;
+        box-shadow: none;
+        transform: none;
+      }
+
+      .btn-danger {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
+      }
+
+      .btn-danger:hover {
+        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+      }
+
+      /* Status Panel Styles */
+      .status-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+
+      .active-tests-banner {
+        background: rgba(59, 130, 246, 0.1);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        font-size: 0.85rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .pulse-dot {
+        width: 8px;
+        height: 8px;
+        background-color: var(--color-accent);
+        border-radius: 50%;
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+        animation: pulse 1.5s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          transform: scale(0.95);
+          box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+        }
+        70% {
+          transform: scale(1);
+          box-shadow: 0 0 0 6px rgba(59, 130, 246, 0);
+        }
+        100% {
+          transform: scale(0.95);
+          box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+        }
+      }
+
+      /* Progress Bar */
+      .progress-container {
+        display: none;
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.25rem;
+      }
+
+      .progress-meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.75rem;
+      }
+
+      .progress-track {
+        height: 8px;
+        background: #1e293b;
+        border-radius: 4px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .progress-bar {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, #3b82f6, #10b981);
+        border-radius: 4px;
+        transition: width 0.4s ease;
+        box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+      }
+
+      /* Grid of stats */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+      }
+
+      .stat-card {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1rem;
+        text-align: center;
+        transition: transform 0.3s ease;
+      }
+
+      .stat-card:hover {
+        transform: translateY(-2px);
+      }
+
+      .stat-card.success { border-left: 3px solid var(--color-success); }
+      .stat-card.blocked { border-left: 3px solid var(--color-warning); }
+      .stat-card.danger { border-left: 3px solid var(--color-danger); }
+      .stat-card.info { border-left: 3px solid var(--color-accent); }
+
+      .stat-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: var(--text-secondary);
+        margin-bottom: 0.25rem;
+        letter-spacing: 0.5px;
+      }
+
+      .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+
+      /* Graph panel */
+      .graph-container {
+        margin-top: 1.5rem;
+        height: 250px;
+        position: relative;
+      }
+
+      /* Alert banners */
+      .alert-banner {
+        display: none;
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        color: #fca5a5;
+        border-radius: 10px;
+        padding: 1rem;
+        font-size: 0.9rem;
+        margin-top: 1rem;
+        align-items: flex-start;
+        gap: 0.75rem;
+      }
+
+      .alert-banner.warning {
+        background: rgba(245, 158, 11, 0.1);
+        border: 1px solid rgba(245, 158, 11, 0.2);
+        color: #fde047;
+      }
+
+      .alert-icon {
+        font-size: 1.25rem;
+        line-height: 1;
+      }
+
+      /* Terminal Log Output */
+      .terminal-log {
+        display: none;
+        background: #090d16;
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1rem;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 0.8rem;
+        color: #a7f3d0;
+        height: 180px;
+        overflow-y: auto;
+        margin-top: 1.5rem;
+      }
+
+      .terminal-line {
+        margin-bottom: 0.4rem;
+        line-height: 1.4;
+      }
+
+      .terminal-line.err { color: #fca5a5; }
+      .terminal-line.warn { color: #fde047; }
+      .terminal-line.success { color: #34d399; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="logo-section">
+        <h1>Load Performance Suite</h1>
+        <p>Advanced Real-time HTTP Load Monitor & Testing Dashboard</p>
+      </div>
+      <nav>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/test-runner" class="active">Test Runner</a>
+      </nav>
+    </header>
+
+    <main>
+      <!-- Configuration Panel -->
+      <section class="card">
+        <h2>Test Configuration</h2>
+        <form id="runnerForm">
+          <div class="form-group">
+            <label for="url">Target Endpoint URL</label>
+            <input type="url" id="url" class="form-control" placeholder="https://example.com/api" required />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="connections">Connections</label>
+              <input type="number" id="connections" class="form-control" value="10" min="1" max="1000" required />
+            </div>
+
+            <div class="form-group">
+              <label for="duration">Duration (s)</label>
+              <input type="number" id="duration" class="form-control" value="10" min="1" max="300" required />
+            </div>
+
+            <div class="form-group">
+              <label for="timeout">Timeout (s)</label>
+              <input type="number" id="timeout" class="form-control" value="5" min="1" max="30" required />
+            </div>
+          </div>
+
+          <div class="form-group" style="display: flex; align-items: center; gap: 0.75rem; margin-top: 1rem; margin-bottom: 0.5rem;">
+            <input type="checkbox" id="removeCache" style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--color-accent); border: 1px solid var(--border-color); border-radius: 4px; background: rgba(15, 23, 42, 0.8);" />
+            <label for="removeCache" style="margin-bottom: 0; cursor: pointer; user-select: none; font-size: 0.9rem; font-weight: 500; color: var(--text-secondary);">Bypass Cache (Force origin response)</label>
+          </div>
+
+          <button type="submit" id="startBtn" class="btn">
+            Execute Performance Test
+          </button>
+          <button type="button" id="stopBtn" class="btn btn-danger" style="display: none;">
+            Stop Current Attack
+          </button>
+        </form>
+      </section>
+
+      <!-- Live Monitoring Panel -->
+      <section class="card">
+        <div class="status-panel">
+          <div class="active-tests-banner" id="activeTestsBanner">
+            <span>Checking system status...</span>
+            <div id="statusPulse" style="display: none;" class="pulse-dot"></div>
+          </div>
+
+          <!-- Progress bar -->
+          <div class="progress-container" id="progressContainer">
+            <div class="progress-meta">
+              <span id="progressPercent">Testing: 0%</span>
+              <span id="progressTime">Time elapsed: 0s</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-bar" id="progressBar"></div>
+            </div>
+          </div>
+
+          <!-- Quick Stats -->
+          <div class="stats-grid">
+            <div class="stat-card info">
+              <div class="stat-label">Total Attempted</div>
+              <div class="stat-value" id="valAttempted">0</div>
+            </div>
+            <div class="stat-card success">
+              <div class="stat-label">Successful (2xx)</div>
+              <div class="stat-value" id="valSuccess">0</div>
+            </div>
+            <div class="stat-card blocked">
+              <div class="stat-label">Rate Limited/Blocked</div>
+              <div class="stat-value" id="valBlocked">0</div>
+            </div>
+            <div class="stat-card danger">
+              <div class="stat-label">Other Errors</div>
+              <div class="stat-value" id="valFailed">0</div>
+            </div>
+          </div>
+
+          <!-- Alert Notification -->
+          <div class="alert-banner" id="alertBanner">
+            <div class="alert-icon" style="font-weight: bold;">Warning:</div>
+            <div id="alertText">Rate limit hit! Request stopped early.</div>
+          </div>
+
+          <!-- Graph -->
+          <div class="graph-container">
+            <canvas id="liveChart"></canvas>
+          </div>
+
+          <!-- Console Terminal -->
+          <div class="terminal-log" id="terminalLog"></div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      let eventSource = null;
+      let chart = null;
+      let testDuration = 10;
+      let timeElapsed = 0;
+      let progressTimer = null;
+      let chartDataPoints = [];
+      let chartLabels = [];
+
+      document.addEventListener('DOMContentLoaded', () => {
+        initChart();
+        checkActiveTests();
+        setInterval(checkActiveTests, 5000);
+
+        document.getElementById('runnerForm').addEventListener('submit', (e) => {
+          e.preventDefault();
+          startTest();
+        });
+
+        document.getElementById('stopBtn').addEventListener('click', stopTest);
+      });
+
+      function initChart() {
+        const ctx = document.getElementById('liveChart').getContext('2d');
+        chart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: ['Success', 'Blocked (403/429)', 'Failed/Errors'],
+            datasets: [{
+              label: 'Request Volume',
+              data: [0, 0, 0],
+              backgroundColor: [
+                'rgba(16, 185, 129, 0.65)',
+                'rgba(245, 158, 11, 0.65)',
+                'rgba(239, 68, 68, 0.65)'
+              ],
+              borderColor: [
+                '#10b981',
+                '#f59e0b',
+                '#ef4444'
+              ],
+              borderWidth: 1.5,
+              borderRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                ticks: { color: '#94a3b8' }
+              },
+              x: {
+                grid: { display: false },
+                ticks: { color: '#94a3b8' }
+              }
+            }
+          }
+        });
+      }
+
+      function checkActiveTests() {
+        fetch('/api/active-tests')
+          .then(res => {
+            if (!res.ok) throw new Error('HTTP status ' + res.status);
+            return res.json();
+          })
+          .then(activeTests => {
+            if (!Array.isArray(activeTests)) return;
+            const banner = document.getElementById('activeTestsBanner');
+            const pulse = document.getElementById('statusPulse');
+            if (activeTests.length > 0) {
+              banner.style.background = 'rgba(59, 130, 246, 0.15)';
+              banner.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+              banner.querySelector('span').innerText = `${activeTests.length} active load test${activeTests.length > 1 ? 's' : ''} running currently`;
+              pulse.style.display = 'block';
+            } else {
+              banner.style.background = 'rgba(255, 255, 255, 0.02)';
+              banner.style.borderColor = 'var(--border-color)';
+              banner.querySelector('span').innerText = 'System Ready. No tests running currently.';
+              pulse.style.display = 'none';
+            }
+          })
+          .catch(e => console.error('Failed to check active tests', e));
+      }
+
+      function updateChart(success, blocked, failed) {
+        chart.data.datasets[0].data = [success, blocked, failed];
+        chart.update();
+      }
+
+      function logToTerminal(text, type = 'info') {
+        const terminal = document.getElementById('terminalLog');
+        terminal.style.display = 'block';
+        const line = document.createElement('div');
+        line.className = `terminal-line ${type}`;
+        
+        const timestamp = new Date().toLocaleTimeString();
+        line.innerText = `[${timestamp}] ${text}`;
+        
+        terminal.appendChild(line);
+        terminal.scrollTop = terminal.scrollHeight;
+      }
+
+      function clearTerminal() {
+        document.getElementById('terminalLog').innerHTML = '';
+        document.getElementById('terminalLog').style.display = 'none';
+      }
+
+      function startTest() {
+        const url = document.getElementById('url').value;
+        const connections = document.getElementById('connections').value;
+        const duration = document.getElementById('duration').value;
+        const timeout = document.getElementById('timeout').value;
+        const removeCache = document.getElementById('removeCache').checked;
+
+        testDuration = parseInt(duration);
+        timeElapsed = 0;
+
+        // Reset UI
+        document.getElementById('startBtn').style.display = 'none';
+        document.getElementById('stopBtn').style.display = 'block';
+        document.getElementById('progressContainer').style.display = 'block';
+        document.getElementById('alertBanner').style.display = 'none';
+        
+        document.getElementById('valAttempted').innerText = '0';
+        document.getElementById('valSuccess').innerText = '0';
+        document.getElementById('valBlocked').innerText = '0';
+        document.getElementById('valFailed').innerText = '0';
+        
+        updateChart(0, 0, 0);
+        clearTerminal();
+
+        logToTerminal(`Initializing connection pool to ${url}...`, 'info');
+        if (removeCache) {
+          logToTerminal('Cache bypass active: sending no-cache headers and randomized query params.', 'warn');
+        }
+        logToTerminal(`Configured for ${connections} concurrent connections, duration ${duration}s`, 'info');
+
+        // Setup Event Source (SSE)
+        const sseUrl = `/api/stream-test?url=${encodeURIComponent(url)}&connections=${connections}&duration=${duration}&timeout=${timeout}&removeCache=${removeCache}`;
+        eventSource = new EventSource(sseUrl);
+
+        // Start local elapsed time counter
+        progressTimer = setInterval(() => {
+          timeElapsed++;
+          const percentage = Math.min(Math.round((timeElapsed / testDuration) * 100), 99);
+          document.getElementById('progressBar').style.width = `${percentage}%`;
+          document.getElementById('progressPercent').innerText = `Testing: ${percentage}%`;
+          document.getElementById('progressTime').innerText = `Time elapsed: ${timeElapsed}s / ${testDuration}s`;
+        }, 1000);
+
+        eventSource.addEventListener('start', (e) => {
+          const data = JSON.parse(e.data);
+          logToTerminal(`Performance attack launched successfully. Test ID: ${data.testId}`, 'success');
+          checkActiveTests();
+        });
+
+        eventSource.addEventListener('tick', (e) => {
+          const data = JSON.parse(e.data);
+          document.getElementById('valAttempted').innerText = data.totalAttempted.toLocaleString();
+          document.getElementById('valSuccess').innerText = data.successCount.toLocaleString();
+          document.getElementById('valBlocked').innerText = data.blockedCount.toLocaleString();
+          document.getElementById('valFailed').innerText = data.otherErrorCount.toLocaleString();
+
+          updateChart(data.successCount, data.blockedCount, data.otherErrorCount);
+          logToTerminal(`Live updates: ${data.successCount} ok, ${data.blockedCount} blocked, ${data.otherErrorCount} errors`, 'info');
+        });
+
+        eventSource.addEventListener('complete', (e) => {
+          const data = JSON.parse(e.data);
+          cleanupTestUI();
+          
+          document.getElementById('progressBar').style.width = '100%';
+          document.getElementById('progressPercent').innerText = 'Testing: 100%';
+
+          document.getElementById('valAttempted').innerText = data.result.totalAttempted.toLocaleString();
+          document.getElementById('valSuccess').innerText = data.result.successCount.toLocaleString();
+          document.getElementById('valBlocked').innerText = data.result.blockedCount.toLocaleString();
+          document.getElementById('valFailed').innerText = data.result.otherErrorCount.toLocaleString();
+
+          updateChart(data.result.successCount, data.result.blockedCount, data.result.otherErrorCount);
+
+          if (data.status === 'stopped_rate_limit') {
+            logToTerminal(`WARNING: Test terminated early due to: ${data.stopReason}`, 'warn');
+            const alertBanner = document.getElementById('alertBanner');
+            alertBanner.style.display = 'flex';
+            alertBanner.className = 'alert-banner warning';
+            document.getElementById('alertText').innerHTML = `<strong>Rate Limit Hit!</strong> Test stopped early: ${data.stopReason}. Forbidden (403/429): ${data.result.blockedCount} requests.`;
+          } else {
+            logToTerminal(`Performance test completed successfully!`, 'success');
+            logToTerminal(`Avg Req/sec: ${data.result.avgReqPerSec.toFixed(2)} | Avg Latency: ${data.result.avgLatency.toFixed(2)} ms`, 'success');
+          }
+
+          checkActiveTests();
+        });
+
+        eventSource.addEventListener('error', (e) => {
+          logToTerminal(`System Connection Error: Unable to complete test stream.`, 'err');
+          cleanupTestUI();
+          checkActiveTests();
+        });
+      }
+
+      function stopTest() {
+        if (eventSource) {
+          eventSource.close();
+          logToTerminal('Test cancelled by user action.', 'warn');
+          cleanupTestUI();
+          checkActiveTests();
+        }
+      }
+
+      function cleanupTestUI() {
+        if (eventSource) {
+          eventSource.close();
+          eventSource = null;
+        }
+        if (progressTimer) {
+          clearInterval(progressTimer);
+          progressTimer = null;
+        }
+        document.getElementById('startBtn').style.display = 'block';
+        document.getElementById('stopBtn').style.display = 'none';
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,14 @@
+node_modules/
+.env
+instance-id.txt
+metrics.log
+merged_metrics.log
+stats.db
+stats.db-journal
+.git/
+.gitignore
+.gemini/
+README.md
+Dockerfile
+.dockerignore
+.env.example
